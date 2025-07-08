@@ -223,6 +223,14 @@
             0%, 80%, 100% { transform: scale(0.8); opacity: 0.5; }
             40% { transform: scale(1); opacity: 1; }
         }
+        #appendBtn{
+            background: linear-gradient(45deg, #67b1af, #263f3e);
+            color:white;
+        }
+        .inbtn{
+            background: linear-gradient(45deg, #b1a067, #ab870f);
+            color:white;
+        }
     </style>
 </head>
 <body>
@@ -238,10 +246,10 @@
             <button id="grammarBtn" class="btn btn-success">🧠 Correct Grammar</button>
             <button id="clearBtn" class="btn">🗑️ Clear Text</button>
             <button id="downloadBtn" class="btn">📄 Download DOCX</button>
-            <button class="btn">
+            <button class="btn inbtn">
                 <input type="file" id="docxInput"  />
             </button>
-            <button id="appendBtn">Save to Document</button>
+            <button id="appendBtn" class="btn">Save to Document</button>
             
 
         </div>
