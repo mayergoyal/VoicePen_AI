@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head><title>Real-time Vosk Transcription</title></head>
+<body>
+  <h1>🎙 Live STT with Vosk</h1>
+  <button id="start">Start</button>
+  <button id="stop" disabled>Stop</button>
+  <div><strong>Result:</strong> <span id="result"></span></div>
+  <script src="https://cdn.jsdelivr.net/npm/vosk-browser@0.0.5/dist/vosk.js"></script>
+
+  <script>
+    let recognizer, processorNode, micStream;
+
+    async function init() {
+      const model = await Vosk.createModel('model.tar.gz');  // ensure model file is hosted
+      recognizer = new model.KaldiRecognizer({sampleRate: 16000});
+
+      const audioCtx = new AudioContext({sampleRate: 16000});
+      micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const source = audioCtx.createMediaStreamSource(micStream);
+
+      processorNode = audioCtx.createScriptProcessor(4096, 1, 1);
+      processorNode.onaudioprocess = e => {
+        const floatBuffer = e.inputBuffer.getChannelData(0);
+        recognizer.acceptWaveform(floatBuffer);
+      };
+
+      source.connect(processorNode);
+      processorNode.connect(audioCtx.destination);
+
+      recognizer.on('result', msg => {
+        document.getElementById('result').innerText = msg.result.text;
+      });
+      recognizer.on('partialresult', msg => {
+        document.getElementById('result').innerText = msg.result.partial + '…';
+      });
+    }
+
+    document.getElementById('start').onclick = async () => {
+      await init();
+      document.getElementById('start').disabled = true;
+      document.getElementById('stop').disabled = false;
+    };
+    document.getElementById('stop').onclick = () => {
+      micStream.getTracks().forEach(t => t.stop());
+      processorNode.disconnect();
+      document.getElementById('start').disabled = false;
+      document.getElementById('stop').disabled = true;
+    };
+  </script>
+</body>
+</html>

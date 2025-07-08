@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎙️ VoicePen AI - Real-time Speech to Text</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: #333;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .controls {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 50px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-danger {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+            color: white;
+        }
+
+        .btn-success {
+            background: linear-gradient(45deg, #51cf66, #40c057);
+            color: white;
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .status {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            border-radius: 15px;
+            font-weight: bold;
+        }
+
+        .status.recording {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+            color: white;
+            animation: pulse 1.5s infinite;
+        }
+
+        .status.idle {
+            background: linear-gradient(45deg, #51cf66, #40c057);
+            color: white;
+        }
+
+        .status.error {
+            background: linear-gradient(45deg, #ff9800, #f57c00);
+            color: white;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+
+        .text-area {
+            width: 100%;
+            height: 400px;
+            padding: 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 15px;
+            font-size: 16px;
+            line-height: 1.6;
+            resize: vertical;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            transition: border-color 0.3s ease;
+        }
+
+        .text-area:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 20px rgba(102, 126, 234, 0.2);
+        }
+
+        .punctuation {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+
+        .punct-btn {
+            width: 50px;
+            height: 50px;
+            border: 2px solid #667eea;
+            background: white;
+            border-radius: 50%;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: #667eea;
+        }
+
+        .punct-btn:hover {
+            background: #667eea;
+            color: white;
+            transform: scale(1.1);
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin: 20px 0;
+            padding: 15px;
+            background: linear-gradient(45deg, #e3f2fd, #f3e5f5);
+            border-radius: 15px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .live-indicator {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+            color: white;
+            border-radius: 15px;
+            font-weight: bold;
+        }
+
+        .live-indicator.active {
+            display: flex;
+            animation: pulse 1.5s infinite;
+        }
+
+        .wave {
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            margin: 0 5px;
+            animation: wave 1.5s infinite ease-in-out;
+        }
+
+        .wave:nth-child(2) { animation-delay: -1.4s; }
+        .wave:nth-child(3) { animation-delay: -1.3s; }
+        .wave:nth-child(4) { animation-delay: -1.2s; }
+
+        @keyframes wave {
+            0%, 80%, 100% { transform: scale(0.8); opacity: 0.5; }
+            40% { transform: scale(1); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎙️ VoicePen AI</h1>
+            <p>Real-time Speech to Text with AI Grammar Correction</p>
+        </div>
+
+        <div class="controls">
+            <button id="startBtn" class="btn btn-primary">🎤 Start Recording</button>
+            <button id="stopBtn" class="btn btn-danger" disabled>⏹️ Stop Recording</button>
+            <button id="grammarBtn" class="btn btn-success">🧠 Correct Grammar</button>
+            <button id="clearBtn" class="btn">🗑️ Clear Text</button>
+            <button id="downloadBtn" class="btn">📄 Download DOCX</button>
+            <button class="btn">
+                <input type="file" id="docxInput"  />
+            </button>
+            <button id="appendBtn">Save to Document</button>
+            
+
+        </div>
+
+        <div id="status" class="status idle">⚪ Ready to record</div>
+
+        <div id="liveIndicator" class="live-indicator">
+            🎙️ Recording in progress
+            <div class="wave"></div>
+            <div class="wave"></div>
+            <div class="wave"></div>
+        </div>
+
+        <div class="punctuation">
+            <button class="punct-btn" data-punct=",">,</button>
+            <button class="punct-btn" data-punct=".">.</button>
+            <button class="punct-btn" data-punct="?">?</button>
+            <button class="punct-btn" data-punct="!">!</button>
+            <button class="punct-btn" data-punct='"'>"</button>
+            <button class="punct-btn" data-punct="'">'</button>
+            <button class="punct-btn" data-punct=":">:</button>
+            <button class="punct-btn" data-punct=";">;</button>
+            <button class="punct-btn" data-punct="(">(</button>
+            <button class="punct-btn" data-punct=")">)</button>
+        </div>
+
+        <textarea id="textArea" class="text-area" placeholder="Your transcribed text will appear here in real-time..."></textarea>
+
+        <div class="stats">
+            <div class="stat-item">
+                <div id="wordCount" class="stat-number">0</div>
+                <div class="stat-label">Words</div>
+            </div>
+            <div class="stat-item">
+                <div id="charCount" class="stat-number">0</div>
+                <div class="stat-label">Characters</div>
+            </div>
+            <div class="stat-item">
+                <div id="timeCount" class="stat-number">00:00</div>
+                <div class="stat-label">Recording Time</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedDocName=null
+        docin=document.getElementById("docxInput");
+        docin.addEventListener("change",async(event)=>{
+            const file=event.target.files[0];
+            if(!file ){
+                alert("no file")
+                return ;
+            }
+            const formdata=new FormData()
+            formdata.append("file",file)
+            const res= await fetch("/upload-file",{
+                method:"POST",
+                body:formdata
+            });
+            const data=await res.json()
+            if(data.filename){
+                selectedDocName=data.filename;
+                alert("file uploaded: "+ selectedDocName)
+            }
+        });
+        document.getElementById("appendBtn").addEventListener("click", function () {
+    const textarea = document.getElementById("textArea");
+    const selectedDoc = selectedDocName; // ✅ Use global var
+    const content = textarea.value;
+
+    if (!selectedDoc) {
+        alert("Please select a file to append to.");
+        return;
+    }
+
+    if (!content.trim()) {
+        alert("Textarea is empty. Nothing to append.");
+        return;
+    }
+
+    const message = {
+        type: "append_to_doc",
+        doc_name: selectedDoc,
+        text: content,
+    };
+
+    if (window.voicePenAI && voicePenAI.ws.readyState === WebSocket.OPEN) {
+    voicePenAI.ws.send(JSON.stringify(message));
+} else {
+    alert("WebSocket connection is not open.");
+}
+
+});
+
+
+        class VoicePenAI {
+            constructor() {
+                this.ws = null;
+                this.mediaRecorder = null;
+                this.audioChunks = [];
+                this.isRecording = false;
+                this.startTime = null;
+                this.timerInterval = null;
+                this.recordingInterval = null;
+                
+                this.initElements();
+                this.initWebSocket();
+                this.bindEvents();
+            }
+
+            initElements() {
+                this.startBtn = document.getElementById('startBtn');
+                this.stopBtn = document.getElementById('stopBtn');
+                this.grammarBtn = document.getElementById('grammarBtn');
+                this.clearBtn = document.getElementById('clearBtn');
+                this.downloadBtn = document.getElementById('downloadBtn');
+                this.textArea = document.getElementById('textArea');
+                this.status = document.getElementById('status');
+                this.liveIndicator = document.getElementById('liveIndicator');
+                this.wordCount = document.getElementById('wordCount');
+                this.charCount = document.getElementById('charCount');
+                this.timeCount = document.getElementById('timeCount');
+            }
+
+            initWebSocket() {
+                const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                this.ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
+                
+                console.log('WebSocket initialized:', this.ws);
+                
+                this.ws.onopen = () => {
+                    console.log('WebSocket connected');
+                    this.updateStatus('Connected to server', 'idle');
+                };
+                
+                this.ws.onclose = () => {
+                    console.log('WebSocket disconnected');
+                    this.updateStatus('Disconnected from server', 'error');
+                };
+                
+                this.ws.onerror = (error) => {
+                    console.error('WebSocket error:', error);
+                    this.updateStatus('Connection error', 'error');
+                };
+                
+                this.ws.onmessage = (event) => {
+                    console.log('Received message:', event.data);
+                    let data;
+                    try {
+                        data = JSON.parse(event.data);
+                    } catch (e) {
+                        console.warn("Non-JSON message from server:", event.data);
+                        // Handle plain text messages from server
+                        if (event.data === 'connected') {
+                            this.updateStatus('Connected to server', 'idle');
+                        }
+                        return;
+                    }
+                    
+                    if (data.type === 'transcription') {
+                        console.log('Transcription received:', data.text);
+                        this.addText(data.text);
+                    } else if (data.type === 'grammar_corrected') {
+                        this.textArea.value = data.text;
+                        this.updateStats();
+                    } else if (data.type === 'status') {
+        console.log('Status message:', data.text);
+
+        // Trigger file download if file was appended
+        if (data.text.includes('Text appended to') && selectedDocName) {
+            fetch(`/download-updated/${selectedDocName}`)
+                .then(response => response.blob())
+                .then(blob => {
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = selectedDocName; // Keep original name
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    window.URL.revokeObjectURL(url);
+                });
+        }
+    }
+ else if (data.type === 'error') {
+                        console.error('Server error:', data.text);
+                        this.updateStatus('Server error: ' + data.text, 'error');
+                    }
+                };
+            }
+
+            bindEvents() {
+                this.startBtn.onclick = () => this.startRecording();
+                this.stopBtn.onclick = () => this.stopRecording();
+                this.grammarBtn.onclick = () => this.correctGrammar();
+                this.clearBtn.onclick = () => this.clearText();
+                this.downloadBtn.onclick = () => this.downloadDocx();
+                this.textArea.oninput = () => this.updateStats();
+
+                // Punctuation buttons
+                document.querySelectorAll('.punct-btn').forEach(btn => {
+                    btn.onclick = () => this.addPunctuation(btn.dataset.punct);
+                });
+            }
+
+            async startRecording() {
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    alert('Your browser does not support audio recording');
+                    return;
+                }
+
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ 
+                        audio: {
+                            sampleRate: 16000,
+                            channelCount: 1,
+                            volume: 1.0
+                        }
+                    });
+                    
+                    // Use audio/webm;codecs=opus for better browser support
+                    const options = { mimeType: 'audio/webm;codecs=opus' };
+                    if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+                        options.mimeType = 'audio/webm';
+                    }
+                    if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+                        options.mimeType = '';
+                    }
+                    
+                    this.mediaRecorder = new MediaRecorder(stream, options);
+                    this.audioChunks = [];
+
+                    this.mediaRecorder.ondataavailable = (event) => {
+                        if (event.data.size > 0) {
+                            console.log('Audio chunk received, size:', event.data.size);
+                            this.audioChunks.push(event.data);
+                            
+                            // Send audio chunk immediately for real-time processing
+                            const audioBlob = new Blob([event.data], { type: event.data.type });
+                            //this.sendAudioToServer(audioBlob);
+                        }
+                    };
+
+                    this.mediaRecorder.onstop = () => {
+    console.log('MediaRecorder stopped');
+    stream.getTracks().forEach(track => track.stop());
+
+    // ✅ Combine all audio chunks into one Blob
+    const fullAudioBlob = new Blob(this.audioChunks, { type: 'audio/webm' });
+    this.sendAudioToServer(fullAudioBlob);
+};
+
+
+                    // Start recording with 3-second chunks for better transcription
+                    this.mediaRecorder.start();
+                    this.recordingInterval = setInterval(() => {
+                        if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
+                            this.mediaRecorder.requestData();
+                        }
+                    }, 3000);
+
+                    this.isRecording = true;
+                    this.startTime = Date.now();
+                    this.startTimer();
+                    this.updateUI();
+                    
+                    console.log('Recording started');
+
+                } catch (error) {
+                    console.error('Error starting recording:', error);
+                    alert('Error accessing microphone: ' + error.message);
+                }
+            }
+
+            stopRecording() {
+                console.log('Stopping recording');
+                
+                if (this.recordingInterval) {
+                    clearInterval(this.recordingInterval);
+                    this.recordingInterval = null;
+                }
+                
+                if (this.mediaRecorder && this.isRecording) {
+                    this.mediaRecorder.stop();
+                    this.isRecording = false;
+                    this.stopTimer();
+                    this.updateUI();
+                }
+            }
+
+            async sendAudioToServer(audioBlob) {
+                if (this.ws.readyState !== WebSocket.OPEN) {
+                    console.error('WebSocket not connected');
+                    return;
+                }
+                
+                console.log('Sending audio to server, blob size:', audioBlob.size);
+                
+                const reader = new FileReader();
+                reader.onload = () => {
+                    const base64Audio = reader.result.split(',')[1];
+                    const message = {
+                        type: 'audio',
+                        data: base64Audio
+                    };
+                    console.log('Sending audio message to server');
+                    this.ws.send(JSON.stringify(message));
+                };
+                reader.onerror = (error) => {
+                    console.error('Error reading audio file:', error);
+                };
+                reader.readAsDataURL(audioBlob);
+                //this.sendAudioToServer(audioBlob)
+            }
+
+            addText(text) {
+                console.log('Adding text to textarea:', text);
+                if (this.textArea.value && !this.textArea.value.endsWith(' ')) {
+                    this.textArea.value += ' ';
+                }
+                this.textArea.value += text + ' ';
+                this.updateStats();
+                this.textArea.scrollTop = this.textArea.scrollHeight;
+
+                if (selectedDocName && this.ws.readyState==WebSocket.OPEN){
+                    this.ws.send(JSON.stringify({
+                        type:"append_to_doc",
+                        doc_name:selectedDocName,
+                        text:text
+                    }))
+                }
+            }
+
+            addPunctuation(punct) {
+                this.textArea.value += punct + ' ';
+                this.updateStats();
+                this.textArea.focus();
+            }
+
+            correctGrammar() {
+                if (!this.textArea.value.trim()) {
+                    alert('Please add some text first');
+                    return;
+                }
+
+                this.grammarBtn.disabled = true;
+                this.grammarBtn.textContent = '⏳ Correcting...';
+
+                if (this.ws.readyState === WebSocket.OPEN) {
+                    this.ws.send(JSON.stringify({
+                        type: 'grammar_check',
+                        text: this.textArea.value
+                    }));
+                }
+
+                setTimeout(() => {
+                    this.grammarBtn.disabled = false;
+                    this.grammarBtn.textContent = '🧠 Correct Grammar';
+                }, 3000);
+            }
+
+            clearText() {
+                this.textArea.value = '';
+                this.updateStats();
+            }
+
+            downloadDocx() {
+                if (!this.textArea.value.trim()) {
+                    alert('No text to download');
+                    return;
+                }
+
+                const element = document.createElement('a');
+                const file = new Blob([this.textArea.value], {type: 'text/plain'});
+                element.href = URL.createObjectURL(file);
+                element.download = 'VoicePenAI_Output.txt';
+                document.body.appendChild(element);
+                element.click();
+                document.body.removeChild(element);
+            }
+
+            updateStats() {
+                const text = this.textArea.value;
+                const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+                const chars = text.length;
+
+                this.wordCount.textContent = words;
+                this.charCount.textContent = chars;
+            }
+
+            updateStatus(message, type = 'idle') {
+                this.status.textContent = message;
+                this.status.className = `status ${type}`;
+            }
+
+            startTimer() {
+                this.timerInterval = setInterval(() => {
+                    const elapsed = Math.floor((Date.now() - this.startTime) / 1000);
+                    const minutes = Math.floor(elapsed / 60);
+                    const seconds = elapsed % 60;
+                    this.timeCount.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                }, 1000);
+            }
+
+            stopTimer() {
+                if (this.timerInterval) {
+                    clearInterval(this.timerInterval);
+                    this.timerInterval = null;
+                }
+            }
+
+            updateUI() {
+                if (this.isRecording) {
+                    this.startBtn.disabled = true;
+                    this.stopBtn.disabled = false;
+                    this.status.className = 'status recording';
+                    this.status.textContent = '🔴 Recording - Speak now!';
+                    this.liveIndicator.classList.add('active');
+                } else {
+                    this.startBtn.disabled = false;
+                    this.stopBtn.disabled = true;
+                    this.status.className = 'status idle';
+                    this.status.textContent = '⚪ Ready to record';
+                    this.liveIndicator.classList.remove('active');
+                }
+            }
+        }
+
+        // Initialize the app when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new VoicePenAI();
+        });
+    </script>
+</body>
+</html>

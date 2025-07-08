@@ -1,0 +1,2 @@
+writers/Scripts/activate
+(writers) PS C:\Users\Mayer\OneDrive\Desktop\writerai\whisper.cpp\examples\server> uvicorn server:app --host 0.0.0.0 --port 9090

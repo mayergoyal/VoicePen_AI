@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎙️ VoicePen AI - Real-time Speech to Text</title>
+    <style>
+        /* Your existing styles remain unchanged */
+        /* ... (keeping all your CSS as-is) */
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎙️ VoicePen AI</h1>
+            <p>Real-time Speech to Text with AI Grammar Correction</p>
+        </div>
+
+        <div class="controls">
+            <button id="startBtn" class="btn btn-primary">🎤 Start Recording</button>
+            <button id="stopBtn" class="btn btn-danger" disabled>⏹️ Stop Recording</button>
+            <button id="grammarBtn" class="btn btn-success">🧠 Correct Grammar</button>
+            <button id="clearBtn" class="btn">🗑️ Clear Text</button>
+            <button id="downloadBtn" class="btn">📄 Download DOCX</button>
+        </div>
+
+        <div id="status" class="status idle">⚪ Ready to record</div>
+
+        <div id="liveIndicator" class="live-indicator">
+            🎙️ Recording in progress
+            <div class="wave"></div>
+            <div class="wave"></div>
+            <div class="wave"></div>
+        </div>
+
+        <div class="punctuation">
+            <button class="punct-btn" data-punct=",">,</button>
+            <button class="punct-btn" data-punct=".">.</button>
+            <button class="punct-btn" data-punct="?">?</button>
+            <button class="punct-btn" data-punct="!">!</button>
+            <button class="punct-btn" data-punct='"'>"</button>
+            <button class="punct-btn" data-punct="'">'</button>
+            <button class="punct-btn" data-punct=":">:</button>
+            <button class="punct-btn" data-punct=";">;</button>
+            <button class="punct-btn" data-punct="(">(</button>
+            <button class="punct-btn" data-punct=")">)</button>
+        </div>
+
+        <textarea id="textArea" class="text-area" placeholder="Your transcribed text will appear here in real-time..."></textarea>
+
+        <div class="stats">
+            <div class="stat-item">
+                <div id="wordCount" class="stat-number">0</div>
+                <div class="stat-label">Words</div>
+            </div>
+            <div class="stat-item">
+                <div id="charCount" class="stat-number">0</div>
+                <div class="stat-label">Characters</div>
+            </div>
+            <div class="stat-item">
+                <div id="timeCount" class="stat-number">00:00</div>
+                <div class="stat-label">Recording Time</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const startBtn = document.getElementById("startBtn");
+        const stopBtn = document.getElementById("stopBtn");
+        const textArea = document.getElementById("textArea");
+        const status = document.getElementById("status");
+        const liveIndicator = document.getElementById("liveIndicator");
+
+        let mediaRecorder;
+        let ws;
+
+        startBtn.addEventListener("click", async () => {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+
+                ws = new WebSocket("ws://localhost:8000/ws");
+
+                ws.onopen = () => {
+                    status.textContent = "🔴 Recording...";
+                    status.className = "status recording";
+                    liveIndicator.classList.add("active");
+                    startBtn.disabled = true;
+                    stopBtn.disabled = false;
+                };
+
+                ws.onmessage = (event) => {
+                    const data = JSON.parse(event.data);
+                    if (data.type === "transcription") {
+                        textArea.value += data.text + " ";
+                        updateStats();
+                    }
+                };
+
+                mediaRecorder.ondataavailable = async (e) => {
+                    if (ws.readyState === WebSocket.OPEN) {
+                        const reader = new FileReader();
+                        reader.onload = () => {
+                            const base64Audio = btoa(reader.result);
+                            ws.send(JSON.stringify({ type: "audio", data: base64Audio }));
+                        };
+                        reader.readAsBinaryString(e.data);
+                    }
+                };
+
+                mediaRecorder.start(1000); // send chunks every second
+
+            } catch (err) {
+                console.error("Mic access error:", err);
+            }
+        });
+
+        stopBtn.addEventListener("click", () => {
+            mediaRecorder?.stop();
+            ws?.close();
+            status.textContent = "🟢 Ready to record";
+            status.className = "status idle";
+            liveIndicator.classList.remove("active");
+            stopBtn.disabled = true;
+            startBtn.disabled = false;
+        });
+
+        function updateStats() {
+            const text = textArea.value;
+            document.getElementById("wordCount").textContent = text.trim().split(/\s+/).length;
+            document.getElementById("charCount").textContent = text.length;
+        }
+
+        // Punctuation buttons
+        document.querySelectorAll(".punct-btn").forEach(btn => {
+            btn.addEventListener("click", () => {
+                textArea.value += btn.dataset.punct;
+                updateStats();
+            });
+        });
+    </script>
+</body>
+</html>
