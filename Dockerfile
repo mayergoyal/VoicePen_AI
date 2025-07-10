@@ -1,11 +1,12 @@
-# Use a stable Python version (not 3.13)
 FROM python:3.10-slim
 
-# Install required system packages
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
     build-essential \
-    ffmpeg \
+    portaudio19-dev \      # ✅ Needed for PyAudio
     libportaudio2 \
+    libportaudiocpp0 \
+    ffmpeg \
     libsndfile1 \
     gcc \
     && rm -rf /var/lib/apt/lists/*
@@ -20,8 +21,8 @@ COPY . .
 RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir -r requirements.txt
 
-# Expose the port uvicorn will run on
+# Expose the port FastAPI will run on
 EXPOSE 8000
 
-# Command to run the app
+# Start the application
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
