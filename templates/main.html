@@ -295,6 +295,31 @@
     </div>
 
     <script>
+                function replaceSpokenPunctuation(text) {
+    const rules = {
+        "question mark": "?",
+        "exclamation mark": "!",
+        "comma": ",",
+        "full stop": ".",
+        "period": ".",
+        "colon": ":",
+        "semicolon": ";",
+        "dash": "-",
+        "open bracket": "(",
+        "close bracket": ")",
+        "quotation mark": '"',
+        "quote": '"',
+        "apostrophe": "'",
+        "new line": "\n"
+    };
+
+    for (let key in rules) {
+        let regex = new RegExp("\\b" + key + "\\b", "gi");
+        text = text.replace(regex, rules[key]);
+    }
+    console.log("done from here");
+    return text;
+}
         let selectedDocName=null
         docin=document.getElementById("docxInput");
         docin.addEventListener("change",async(event)=>{
@@ -411,7 +436,9 @@
                     
                     if (data.type === 'transcription') {
                         console.log('Transcription received:', data.text);
-                        this.addText(data.text);
+                        let final=replaceSpokenPunctuation(data.text)
+                        console.log("adding punctuation ",final)
+                        this.addText(final);
                     } else if (data.type === 'grammar_corrected') {
                         this.textArea.value = data.text;
                         this.updateStats();

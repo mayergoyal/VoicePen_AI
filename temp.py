@@ -1,15 +1,28 @@
-from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
-import torch
+from transformers import AutoTokenizer, AutoModelForTokenClassification, pipeline
 
-tokenizer = AutoTokenizer.from_pretrained("vennify/t5-base-grammar-correction")
-model = AutoModelForSeq2SeqLM.from_pretrained("vennify/t5-base-grammar-correction")
+# Load model and tokenizer
+tokenizer = AutoTokenizer.from_pretrained("oliverguhr/fullstop-punctuation-multilang-large")
+model = AutoModelForTokenClassification.from_pretrained("oliverguhr/fullstop-punctuation-multilang-large")
 
-def correct_with_t5(text):
-    input_text = "fix: " + text
-    inputs = tokenizer.encode(input_text, return_tensors="pt")
-    outputs = model.generate(inputs, max_length=128, num_beams=4, early_stopping=True)
-    return tokenizer.decode(outputs[0], skip_special_tokens=True)
+# Create pipeline
+nlp = pipeline("token-classification", model=model, tokenizer=tokenizer, aggregation_strategy="simple")
 
-text = "I is loveful and interested"
-corrected = correct_with_t5(text)
-print(corrected)
+# Input text (without punctuation)
+text = "he said good bye while sneezing I'll be back soon"
+
+# Get model predictions
+results = nlp(text)
+
+# Build final sentence
+punctuated_text = ""
+for res in results:
+    word = res["word"]
+    punct = res["entity_group"]
+    punctuated_text += word
+    if punct in [".", ",", ":", "!", "?"]:
+        punctuated_text += punct
+    punctuated_text += " "
+
+# Cleanup and print
+punctuated_text = punctuated_text.strip()
+print(punctuated_text)

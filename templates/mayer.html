@@ -65,6 +65,32 @@
     </div>
 
     <script>
+        function replaceSpokenPunctuation(text) {
+    const rules = {
+        "question mark": "?",
+        "exclamation mark": "!",
+        "comma": ",",
+        "full stop": ".",
+        "period": ".",
+        "colon": ":",
+        "semicolon": ";",
+        "dash": "-",
+        "open bracket": "(",
+        "close bracket": ")",
+        "quotation mark": '"',
+        "quote": '"',
+        "apostrophe": "'",
+        "new line": "\n"
+    };
+
+    for (let key in rules) {
+        let regex = new RegExp("\\b" + key + "\\b", "gi");
+        text = text.replace(regex, rules[key]);
+    }
+    console.log("done from here");
+    return text;
+}
+
         const startBtn = document.getElementById("startBtn");
         const stopBtn = document.getElementById("stopBtn");
         const textArea = document.getElementById("textArea");
@@ -92,7 +118,8 @@
                 ws.onmessage = (event) => {
                     const data = JSON.parse(event.data);
                     if (data.type === "transcription") {
-                        textArea.value += data.text + " ";
+                    let processed = replaceSpokenPunctuation(data.text);
+                        textArea.value += processed + " ";
                         updateStats();
                     }
                 };
